@@ -21,7 +21,6 @@ class Blockchain:
         for tx in new_block.transactions:
             if not verify_signature(tx.sender, tx.signature, str(tx.to_dict())):
                 raise ValueError("Security breach: Invalid transaction signature")
-
         # Logic for extending the chain
         new_block.previous_hash = self.get_latest_block().hash
         # Update hash after setting previous hash to maintain link
