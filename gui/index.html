@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Blockchain Simulator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav>
+    <span class="nav-title">Blockchain Simulator</span>
+    <div class="nav-tabs">
+        <button class="tab active" data-page="chain">Łańcuch</button>
+        <button class="tab" data-page="send">Transakcja</button>
+        <button class="tab" data-page="security">Bezpieczeństwo</button>
+        <button class="tab" data-page="keys">Klucze</button>
+    </div>
+    <div class="nav-info">
+        <span>Bloki: <strong id="s-blocks">1</strong></span>
+        <span>Transakcje: <strong id="s-txs">0</strong></span>
+        <span id="s-status" class="status-ok">● Prawidłowy</span>
+    </div>
+</nav>
+
+<!-- Łańcuch bloków -->
+<div class="page active" id="page-chain">
+    <div class="chain-scroll">
+        <div class="chain-row" id="chain-el"></div>
+    </div>
+
+    <div id="detail-empty" class="hint">Kliknij blok aby zobaczyć szczegóły</div>
+
+    <div id="detail-panel" style="display:none" class="detail-grid">
+        <div class="box">
+            <div class="box-title">Nagłówek bloku</div>
+            <div id="d-header"></div>
+        </div>
+        <div class="box">
+            <div class="box-title">Transakcje</div>
+            <div id="d-txs"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Nowa transakcja -->
+<div class="page" id="page-send">
+    <div class="form-wrap">
+        <div class="box">
+            <div class="box-title">Nowa transakcja</div>
+            <div class="form-row">
+                <div class="field">
+                    <label>Nadawca</label>
+                    <input type="text" id="tx-sender" placeholder="np. Alice">
+                </div>
+                <div class="field">
+                    <label>Odbiorca</label>
+                    <input type="text" id="tx-recipient" placeholder="np. Bob">
+                </div>
+            </div>
+            <div class="field">
+                <label>Kwota (BTC)</label>
+                <input type="number" id="tx-amount" placeholder="0.0000" min="0.0001" step="0.0001">
+            </div>
+            <button class="btn-primary" id="btn-add-tx">Dodaj do kolejki</button>
+            <p id="tx-msg" class="msg"></p>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Kolejka transakcji</div>
+            <div id="pending-el"><p class="hint">Brak transakcji w kolejce</p></div>
+        </div>
+
+        <button class="btn-primary" id="btn-mine">Wykop blok</button>
+        <p id="mine-msg" class="msg"></p>
+        <p id="mine-pow" style="display:none" class="hint">⛏ Szukanie nonce (Proof of Work)...</p>
+    </div>
+</div>
+
+<!-- Bezpieczeństwo -->
+<div class="page" id="page-security">
+    <div class="form-wrap">
+
+        <div class="box">
+            <div class="box-title">Walidator 1 — hash_validator.py</div>
+            <p class="hint">Sprawdza czy SHA-256 każdego bloku zgadza się z zawartością oraz czy previous_hash wskazuje na właściwego poprzednika.</p>
+            <button class="btn-secondary" id="btn-val-hash">Uruchom</button>
+            <div id="val-hash-result"></div>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Walidator 2 — signature_validator.py</div>
+            <p class="hint">Weryfikuje podpisy RSA-PSS każdej transakcji używając klucza publicznego nadawcy.</p>
+            <button class="btn-secondary" id="btn-val-sig">Uruchom</button>
+            <div id="val-sig-result"></div>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Walidator 3 — structure_validator.py</div>
+            <p class="hint">Kompleksowa walidacja — pola bloków, kolejność indeksów, pola transakcji, spójność całego łańcucha.</p>
+            <button class="btn-secondary" id="btn-val-struct">Uruchom</button>
+            <div id="val-struct-result"></div>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Symulacja ataku</div>
+            <p class="hint">Zmienia kwotę transakcji bez aktualizacji hasha. Uruchom walidatory po ataku żeby zobaczyć wykrytą manipulację.</p>
+            <div class="form-row">
+                <div class="field">
+                    <label>Blok docelowy</label>
+                    <select id="atk-block"></select>
+                </div>
+                <div class="field">
+                    <label>Nowa kwota (BTC)</label>
+                    <input type="number" id="atk-amount" placeholder="9999">
+                </div>
+            </div>
+            <button class="btn-danger" id="btn-attack">Wykonaj atak</button>
+            <div id="atk-result"></div>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Reset</div>
+            <p class="hint">Usuwa wszystkie bloki, tworzy nowy genesis block i regeneruje klucze RSA.</p>
+            <button class="btn-secondary" id="btn-reset">Resetuj blockchain</button>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Log</div>
+            <div class="log" id="log-el"></div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Klucze -->
+<div class="page" id="page-keys">
+    <div class="form-wrap">
+        <div class="box">
+            <div class="box-title">Aktywni użytkownicy</div>
+            <div id="users-list"><p class="hint">Brak użytkowników — dodaj transakcję aby wygenerować klucze RSA</p></div>
+        </div>
+        <div class="box">
+            <div class="box-title">Parametry kryptograficzne</div>
+            <table class="info-table">
+                <tr><td>Algorytm podpisu</td><td>RSA-PSS / SHA-256 / MGF1</td></tr>
+                <tr><td>Rozmiar klucza</td><td>2048 bit</td></tr>
+                <tr><td>Hashowanie bloku</td><td>SHA-256, sort_keys=True</td></tr>
+                <tr><td>Łączenie bloków</td><td>previous_hash = hash[n-1]</td></tr>
+                <tr><td>Serializacja tx</td><td>str(tx.to_dict()) → SHA-256</td></tr>
+                <tr><td>Padding podpisu</td><td>PSS + MGF1 + salt=MAX_LENGTH</td></tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="main.js"></script>
+</body>
+</html>
