@@ -1,57 +1,23 @@
 from src.block import Block
 from src.blockchain import Blockchain
-from src.transaction import Transaction
-from validators.hash_validator import validate_chain_hashes
-from validators.signature_validator import validate_chain_signatures
+from src.signatures import verify_signature
 
-
-def validate_transaction_fields(tx) -> bool:
-    # All three core fields must be present and non-empty
-    if not isinstance(tx, Transaction):
-        return False
-    if not tx.sender or not tx.recipient:
-        return False
-    if not isinstance(tx.amount, (int, float)) or tx.amount <= 0:
-        return False
-    return True
-
-
-def validate_block_structure(block: Block) -> bool:
-    required_attrs = ["index", "timestamp", "transactions", "previous_hash", "nonce", "hash"]
-
-    for attr in required_attrs:
-        if not hasattr(block, attr):
-            return False
-
-    if not isinstance(block.transactions, list):
+def validate_transaction_signature(tx) -> bool:
+    # Unsigned transactions are rejected outright
+    if tx.signature is None:
         return False
 
+    return verify_signature(tx.sender, tx.signature, str(tx.to_dict()))
+
+def validate_block_signatures(block: Block) -> bool:
     for tx in block.transactions:
-        if not validate_transaction_fields(tx):
+        if not validate_transaction_signature(tx):
             return False
-
     return True
 
-
-def validate_blockchain(blockchain: Blockchain) -> dict:
-    errors = []
-
-    # Genesis block must always exist
-    if not blockchain.chain:
-        return {"valid": False, "errors": ["Chain is empty"]}
-
-    # Check block structure and index ordering
-    for i, block in enumerate(blockchain.chain):
-        if not validate_block_structure(block):
-            errors.append(f"Block {i}: invalid structure")
-        if block.index != i:
-            errors.append(f"Block {i}: index mismatch (got {block.index})")
-
-    # Delegate hash and signature checks to dedicated validators
-    if not validate_chain_hashes(blockchain):
-        errors.append("Hash chain integrity compromised")
-
-    if not validate_chain_signatures(blockchain):
-        errors.append("One or more transaction signatures are invalid")
-
-    return {"valid": len(errors) == 0, "errors": errors}
+def validate_chain_signatures(blockchain: Blockchain) -> bool:
+    # Genesis block has no transactions to verify
+    for block in blockchain.chain[1:]:
+        if not validate_block_signatures(block):
+            return False
+    return True

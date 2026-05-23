@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Blockchain Simulator</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='Style.css') }}">
 </head>
 <body>
 
@@ -22,7 +22,6 @@
     </div>
 </nav>
 
-<!-- Łańcuch bloków -->
 <div class="page active" id="page-chain">
     <div class="chain-scroll">
         <div class="chain-row" id="chain-el"></div>
@@ -42,7 +41,6 @@
     </div>
 </div>
 
-<!-- Nowa transakcja -->
 <div class="page" id="page-send">
     <div class="form-wrap">
         <div class="box">
@@ -50,11 +48,11 @@
             <div class="form-row">
                 <div class="field">
                     <label>Nadawca</label>
-                    <input type="text" id="tx-sender" placeholder="np. Alice">
+                    <input type="text" id="tx-sender" placeholder="Imię osoby nr 1">
                 </div>
                 <div class="field">
                     <label>Odbiorca</label>
-                    <input type="text" id="tx-recipient" placeholder="np. Bob">
+                    <input type="text" id="tx-recipient" placeholder="Imie osoby nr 2">
                 </div>
             </div>
             <div class="field">
@@ -76,7 +74,6 @@
     </div>
 </div>
 
-<!-- Bezpieczeństwo -->
 <div class="page" id="page-security">
     <div class="form-wrap">
 
@@ -132,7 +129,6 @@
     </div>
 </div>
 
-<!-- Klucze -->
 <div class="page" id="page-keys">
     <div class="form-wrap">
         <div class="box">
@@ -153,6 +149,6 @@
     </div>
 </div>
 
-<script src="main.js"></script>
+<script src="{{ url_for('static', filename='main.js') }}"></script>
 </body>
 </html>
