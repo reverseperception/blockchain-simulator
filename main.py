@@ -4,6 +4,7 @@ from src.blockchain import Blockchain
 from src.block import Block
 from src.transaction import Transaction
 from src.signatures import get_or_create_wallet, sign_data, get_all_users
+from src.community import COMMUNITY_USERS
 from validators.hash_validator import validate_chain_hashes
 from validators.signature_validator import validate_chain_signatures
 from validators.structure_validator import validate_blockchain
@@ -16,6 +17,11 @@ pending_transactions = []
 def index():
     # Serve pure HTML template
     return render_template('index.html')
+
+@app.route('/api/community', methods=['GET'])
+def get_community():
+    # Return the allowed list of 10 popular Polish names
+    return jsonify(COMMUNITY_USERS)
 
 @app.route('/api/chain', methods=['GET'])
 def get_chain():
@@ -46,6 +52,13 @@ def add_transaction():
     
     if not sender or not recipient:
         return jsonify({"status": "error", "message": "Sender and recipient are required!"}), 400
+
+    # Security: Validate if users belong to the predefined community
+    if sender not in COMMUNITY_USERS or recipient not in COMMUNITY_USERS:
+        return jsonify({"status": "error", "message": "Users must belong to the allowed community!"}), 400
+
+    if sender == recipient:
+        return jsonify({"status": "error", "message": "Sender and recipient cannot be the same person!"}), 400
 
     # Prevent server crash by validating data type
     try:
@@ -114,22 +127,6 @@ def val_struct():
     result = validate_blockchain(blockchain)
     return jsonify(result)
 
-@app.route('/api/attack', methods=['POST'])
-def attack():
-    data = request.json
-    block_idx = int(data.get('block_idx'))
-    new_amount = float(data.get('amount'))
-    
-    if block_idx <= 0 or block_idx >= len(blockchain.chain):
-        return jsonify({"status": "error", "message": "Invalid block index (Cannot modify Genesis block)"})
-    
-    if not blockchain.chain[block_idx].transactions:
-        return jsonify({"status": "error", "message": "This block has no transactions to manipulate"})
-
-    # Attack: modify amount without updating block hash (simulating memory tamper)
-    blockchain.chain[block_idx].transactions[0].amount = new_amount
-    return jsonify({"status": "ok", "message": f"Manipulated transaction in block {block_idx}"})
-
 @app.route('/api/reset', methods=['POST'])
 def reset_chain():
     global blockchain, pending_transactions
@@ -141,4 +138,4 @@ def reset_chain():
     return jsonify({"status": "ok", "message": "Blockchain reset"})
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5000)

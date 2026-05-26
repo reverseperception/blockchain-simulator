@@ -19,6 +19,30 @@ document.addEventListener('DOMContentLoaded', () => {
         logEl.scrollTop = logEl.scrollHeight;
     }
 
+    // Convert input fields to select dropdowns with predefined Polish names
+    async function initCommunity() {
+        const res = await fetch('/api/community');
+        const users = await res.json();
+        
+        const senderInput = document.getElementById('tx-sender');
+        const recipientInput = document.getElementById('tx-recipient');
+        
+        if (senderInput && recipientInput) {
+            const senderSelect = document.createElement('select');
+            senderSelect.id = 'tx-sender';
+            const recipientSelect = document.createElement('select');
+            recipientSelect.id = 'tx-recipient';
+            
+            users.forEach(user => {
+                senderSelect.innerHTML += `<option value="${user}">${user}</option>`;
+                recipientSelect.innerHTML += `<option value="${user}">${user}</option>`;
+            });
+            
+            senderInput.parentNode.replaceChild(senderSelect, senderInput);
+            recipientInput.parentNode.replaceChild(recipientSelect, recipientInput);
+        }
+    }
+
     // Fetch and render the entire blockchain state from the server
     async function refreshData() {
         const res = await fetch('/api/chain');
@@ -30,9 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const chainEl = document.getElementById('chain-el');
         chainEl.innerHTML = '';
-        
-        const atkSelect = document.getElementById('atk-block');
-        atkSelect.innerHTML = '';
 
         chain.forEach(block => {
             // Render individual block in the chain visualization
@@ -57,11 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 arrow.className = 'chain-arrow';
                 arrow.innerText = '→';
                 chainEl.appendChild(arrow);
-            }
-
-            // Populate block selection dropdown for data tampering attack (excluding Genesis)
-            if(block.index > 0 && block.transactions.length > 0) {
-                atkSelect.innerHTML += `<option value="${block.index}">Blok #${block.index}</option>`;
             }
         });
         
@@ -248,35 +264,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-val-sig').onclick = () => runValidator('/api/validate/signature', 'val-sig-result');
     document.getElementById('btn-val-struct').onclick = () => runValidator('/api/validate/structure', 'val-struct-result');
 
-    // Handle simulated attack (Data Tampering) on the blockchain
-    document.getElementById('btn-attack').onclick = async () => {
-        const idx = document.getElementById('atk-block').value;
-        const amt = document.getElementById('atk-amount').value;
-        
-        if(!idx || !amt) return;
-        
-        await fetch('/api/attack', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({block_idx: idx, amount: amt})
-        });
-        
-        document.getElementById('atk-result').innerHTML = `<div class="result err">Transakcja w bloku #${idx} została sfałszowana. Uruchom walidatory!</div>`;
-        log(`Przeprowadzono atak na blok #${idx}!`, "warn");
-        refreshData();
-    };
-
     // Reset blockchain state and clear in-memory wallets
     document.getElementById('btn-reset').onclick = async () => {
         await fetch('/api/reset', {method: 'POST'});
         log(`Blockchain został zresetowany.`, "info");
-        document.getElementById('atk-result').innerHTML = '';
         document.querySelectorAll('.result').forEach(el => el.innerHTML = '');
         document.getElementById('tx-msg').innerText = ''; 
         document.getElementById('mine-msg').innerText = '';
         refreshData();
     };
 
-    // Initialize the application data on load
-    refreshData();
+    // Initialize community options and application data on load
+    initCommunity().then(() => {
+        refreshData();
+    });
 });
