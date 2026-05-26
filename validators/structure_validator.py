@@ -6,6 +6,7 @@ from validators.signature_validator import validate_chain_signatures
 
 def validate_transaction_fields(tx) -> bool:
     # All three core fields must be present and non-empty
+    # Wszystkie trzy kluczowe pola muszą być obecne i nie mogą być puste
     if not isinstance(tx, Transaction):
         return False
     if not tx.sender or not tx.recipient:
@@ -34,10 +35,12 @@ def validate_blockchain(blockchain: Blockchain) -> dict:
     errors = []
 
     # Genesis block must always exist
+    # Blok genesis musi zawsze istnieć
     if not blockchain.chain:
         return {"valid": False, "errors": ["Chain is empty"]}
 
     # Check block structure and index ordering
+    # Sprawdza strukturę bloku i kolejność indeksów
     for i, block in enumerate(blockchain.chain):
         if not validate_block_structure(block):
             errors.append(f"Block {i}: invalid structure")
@@ -45,6 +48,7 @@ def validate_blockchain(blockchain: Blockchain) -> dict:
             errors.append(f"Block {i}: index mismatch (got {block.index})")
 
     # Delegate hash and signature checks to dedicated validators
+    # Deleguje sprawdzanie hashu i podpisu do dedykowanych walidatorów
     if not validate_chain_hashes(blockchain):
         errors.append("Hash chain integrity compromised")
 

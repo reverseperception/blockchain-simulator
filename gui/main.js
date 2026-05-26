@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Handle navigation menu clicks
+    // Obsługa kliknięć w menu nawigacyjnym
     document.querySelectorAll('.tab').forEach(tab => {
         tab.addEventListener('click', (e) => {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -12,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Helper function to append action logs to the UI
+    // Funkcja pomocnicza do dodawania logów aktywności w interfejsie użytkownika
     function log(msg, type="info") {
         const logEl = document.getElementById('log-el');
         const time = new Date().toLocaleTimeString();
@@ -19,7 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
         logEl.scrollTop = logEl.scrollHeight;
     }
 
-    // Convert input fields to select dropdowns with predefined Polish names
+    // Dropdown lists with users
+    // Listy rozwijane z użytkownikami
+
     async function initCommunity() {
         const res = await fetch('/api/community');
         const users = await res.json();
@@ -44,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Fetch and render the entire blockchain state from the server
+    // Pobranie z serwera i wyświetlenie całego stanu blockchaina
     async function refreshData() {
         const res = await fetch('/api/chain');
         const chain = await res.json();
@@ -57,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         chain.forEach(block => {
             // Render individual block in the chain visualization
+            // Wyświetlenie pojedynczego bloku w wizualizacji łańcucha
             const b = document.createElement('div');
             b.className = 'block';
             b.innerHTML = `
@@ -73,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             chainEl.appendChild(b);
 
             // Add connecting arrows between blocks
+            // Dodanie strzałek łączących bloki
             if(block.index < chain.length - 1) {
                 const arrow = document.createElement('div');
                 arrow.className = 'chain-arrow';
@@ -86,6 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Fetch and render the pending transactions pool
+    // Pobranie i wyświetlenie puli oczekujących transakcji
     async function refreshPending() {
         const res = await fetch('/api/pending');
         const pending = await res.json();
@@ -108,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Fetch and render the list of users and their RSA public keys
+    // Pobranie i wyświetlenie listy użytkowników wraz z ich kluczami publicznymi RSA
     async function refreshKeys() {
         const res = await fetch('/api/keys');
         const users = await res.json();
@@ -132,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Display selected block details in the side panel
+    // Wyświetlenie szczegółów wybranego bloku w panelu bocznym
     function showBlockDetails(block) {
         document.getElementById('detail-empty').style.display = 'none';
         document.getElementById('detail-panel').style.display = 'grid';
@@ -160,6 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Handle new transaction submission
+    // Obsługa przesyłania nowej transakcji
     document.getElementById('btn-add-tx').onclick = async () => {
         const s = document.getElementById('tx-sender').value;
         const r = document.getElementById('tx-recipient').value;
@@ -187,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let data;
         try {
             // Parse server response safely
+            // Bezpieczne parsowanie odpowiedzi z serwera
             data = await response.json();
         } catch(e) {
             // Generic fallback for critical server errors (HTTP 500)
@@ -196,6 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Handle server-side validation feedback
+        // Obsługa komunikatów zwrotnych z walidacji po stronie serwera
         if (data.status === "ok") {
             document.getElementById('tx-msg').innerText = "Dodano do kolejki!";
             document.getElementById('tx-msg').className = "msg ok";
@@ -211,6 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Handle Proof of Work mining process
+    // Obsługa procesu kopania Proof of Work
     document.getElementById('btn-mine').onclick = async () => {
         document.getElementById('mine-pow').style.display = 'block';
         document.getElementById('mine-msg').innerText = '';
@@ -240,6 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Execute specific blockchain validation algorithms
+    // Uruchomienie algorytmów walidacji łańcucha bloków
     async function runValidator(endpoint, elId) {
         const res = await fetch(endpoint);
         const data = await res.json();
@@ -260,11 +275,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Event listeners for validator buttons
+    // Nasłuchiwanie zdarzeń dla przycisków walidatora
     document.getElementById('btn-val-hash').onclick = () => runValidator('/api/validate/hash', 'val-hash-result');
     document.getElementById('btn-val-sig').onclick = () => runValidator('/api/validate/signature', 'val-sig-result');
     document.getElementById('btn-val-struct').onclick = () => runValidator('/api/validate/structure', 'val-struct-result');
 
     // Reset blockchain state and clear in-memory wallets
+    // Zresetowanie stanu blockchaina i wyczyszczenie portfeli w pamięci RAM
     document.getElementById('btn-reset').onclick = async () => {
         await fetch('/api/reset', {method: 'POST'});
         log(`Blockchain został zresetowany.`, "info");
@@ -275,6 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Initialize community options and application data on load
+    // Inicjalizacja opcji społeczności i danych aplikacji przy uruchomieniu
     initCommunity().then(() => {
         refreshData();
     });

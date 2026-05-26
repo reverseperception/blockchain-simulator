@@ -4,6 +4,7 @@ from src.signatures import verify_signature
 
 def validate_transaction_signature(tx) -> bool:
     # Unsigned transactions are rejected outright
+    # Niepodpisane transakcje są natychmiast odrzucane
     if tx.signature is None:
         return False
 
@@ -17,6 +18,7 @@ def validate_block_signatures(block: Block) -> bool:
 
 def validate_chain_signatures(blockchain: Blockchain) -> bool:
     # Genesis block has no transactions to verify
+    # Blok genesis nie ma żadnych transakcji do zweryfikowania
     for block in blockchain.chain[1:]:
         if not validate_block_signatures(block):
             return False

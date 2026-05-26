@@ -3,11 +3,13 @@ from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization
 
 # Global map acting as an in-memory database storing keys assigned to a username
+# Globalna mapa działająca jako baza danych w pamięci, przechowująca klucze przypisane do nazwy użytkownika
 WALLETS = {}
 
 def get_or_create_wallet(username: str):
     if username not in WALLETS:
         # Creates a pair of private and public keys for digital identity
+        # Tworzy parę kluczy prywatnego i publicznego dla cyfrowej tożsamości
         private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         WALLETS[username] = {
             "private": private_key,
@@ -19,6 +21,7 @@ def get_all_users() -> dict:
     users_info = {}
     for user, keys in WALLETS.items():
         # Export public key to a readable PEM format (standard format in cryptography)
+        # Eksportuje klucz publiczny do czytelnego formatu PEM (standardowy format w kryptografii)
         pem = keys["public"].public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
@@ -28,6 +31,7 @@ def get_all_users() -> dict:
 
 def sign_data(private_key, data: str) -> str:
     # Uses the private key to create a unique digital signature
+    # Używa klucza prywatnego do utworzenia unikalnego podpisu cyfrowego
     signature = private_key.sign(
         data.encode(),
         padding.PSS(
@@ -37,15 +41,18 @@ def sign_data(private_key, data: str) -> str:
         hashes.SHA256()
     )
     # Returns signature as a readable HEX string
+    # Zwraca podpis w postaci czytelnego ciągu HEX
     return signature.hex() 
 
 def verify_signature(sender_username: str, signature_hex: str, data: str) -> bool:
     # Unknown public key for this sender
+    # Nieznany klucz publiczny dla tego nadawcy
     if sender_username not in WALLETS:
         return False 
     
     public_key = WALLETS[sender_username]["public"]
     # Validates if the signature matches the data and the sender
+    # Sprawdza, czy podpis pasuje do danych i nadawcy
     try:
         public_key.verify(
             bytes.fromhex(signature_hex),
