@@ -13,6 +13,7 @@
         <button class="tab active" data-page="chain">Łańcuch</button>
         <button class="tab" data-page="send">Transakcja</button>
         <button class="tab" data-page="security">Bezpieczeństwo</button>
+        <button class="tab" data-page="attack">Atak</button>
         <button class="tab" data-page="keys">Klucze</button>
     </div>
     <div class="nav-info">
@@ -100,13 +101,58 @@
 
         <div class="box">
             <div class="box-title">Reset</div>
-            <p class="hint">Usuwa wszystkie bloki, creates a new genesis block i regeneruje klucze RSA.</p>
+            <p class="hint">Usuwa wszystkie bloki, tworzy nowy blok genesis i regeneruje klucze RSA.</p>
             <button class="btn-secondary" id="btn-reset">Resetuj blockchain</button>
         </div>
 
         <div class="box">
             <div class="box-title">Log</div>
             <div class="log" id="log-el"></div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Attack simulation tab — demonstrates hash and signature cascade failure -->
+<!-- Zakładka symulacji ataku — demonstracja kaskadowego błędu hashy i podpisów -->
+<div class="page" id="page-attack">
+    <div class="form-wrap">
+
+        <div class="box">
+            <div class="box-title">Symulacja ataku — manipulacja blokiem</div>
+            <p class="hint">
+                Wybierz wydobyty blok i zmień kwotę transakcji bez ponownego podpisywania.
+                Następnie przejdź do zakładki <strong>Bezpieczeństwo</strong> i uruchom walidatory —
+                system wykryje naruszenie integralności łańcucha.
+            </p>
+
+            <div class="form-row">
+                <div class="field">
+                    <label>Wybierz blok (nie genesis)</label>
+                    <select id="attack-block-select">
+                        <option value="">— brak wydobytych bloków —</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Nowa kwota (BTC)</label>
+                    <input type="number" id="attack-new-amount" placeholder="np. 9999.0" min="0.0001" step="0.0001">
+                </div>
+            </div>
+
+            <button class="btn-secondary" id="btn-attack-tamper">Wykonaj atak</button>
+            <p id="attack-msg" class="msg"></p>
+        </div>
+
+        <!-- Shows before/after state of the tampered block -->
+        <!-- Pokazuje stan bloku przed i po manipulacji -->
+        <div class="box" id="attack-result-box" style="display:none">
+            <div class="box-title">Wynik ataku</div>
+            <div id="attack-result-content"></div>
+        </div>
+
+        <div class="box">
+            <div class="box-title">Log ataku</div>
+            <div class="log" id="attack-log-el"></div>
         </div>
 
     </div>
@@ -127,6 +173,9 @@
                 <tr><td>Łączenie bloków</td><td>previous_hash = hash[n-1]</td></tr>
                 <tr><td>Serializacja tx</td><td>str(tx.to_dict()) → SHA-256</td></tr>
                 <tr><td>Padding podpisu</td><td>PSS + MGF1 + salt=MAX_LENGTH</td></tr>
+                <tr><td>Test pierwszości</td><td>Miller–Rabin (k=20 rund)</td></tr>
+                <tr><td>Potęgowanie mod.</td><td>Square-and-multiply O(log n)</td></tr>
+                <tr><td>Odw. mod. (d=e⁻¹)</td><td>Rozszerzony algorytm Euklidesa</td></tr>
             </table>
         </div>
     </div>

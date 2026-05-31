@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tab.addEventListener('click', (e) => {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            
+
             e.target.classList.add('active');
             document.getElementById(`page-${e.target.dataset.page}`).classList.add('active');
             refreshData();
@@ -21,27 +21,35 @@ document.addEventListener('DOMContentLoaded', () => {
         logEl.scrollTop = logEl.scrollHeight;
     }
 
+    // Helper for attack tab log — separate log element
+    // Pomocnik logu zakładki ataku — osobny element logu
+    function attackLog(msg, type="info") {
+        const logEl = document.getElementById('attack-log-el');
+        const time = new Date().toLocaleTimeString();
+        logEl.innerHTML += `<div class="log-line"><span class="log-time">[${time}]</span> <span class="log-${type}">${msg}</span></div>`;
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+
     // Dropdown lists with users
     // Listy rozwijane z użytkownikami
-
     async function initCommunity() {
         const res = await fetch('/api/community');
         const users = await res.json();
-        
+
         const senderInput = document.getElementById('tx-sender');
         const recipientInput = document.getElementById('tx-recipient');
-        
+
         if (senderInput && recipientInput) {
             const senderSelect = document.createElement('select');
             senderSelect.id = 'tx-sender';
             const recipientSelect = document.createElement('select');
             recipientSelect.id = 'tx-recipient';
-            
+
             users.forEach(user => {
                 senderSelect.innerHTML += `<option value="${user}">${user}</option>`;
                 recipientSelect.innerHTML += `<option value="${user}">${user}</option>`;
             });
-            
+
             senderInput.parentNode.replaceChild(senderSelect, senderInput);
             recipientInput.parentNode.replaceChild(recipientSelect, recipientInput);
         }
@@ -52,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function refreshData() {
         const res = await fetch('/api/chain');
         const chain = await res.json();
-        
+
         document.getElementById('s-blocks').innerText = chain.length;
         let txCount = chain.reduce((acc, block) => acc + block.transactions.length, 0);
         document.getElementById('s-txs').innerText = txCount;
@@ -87,9 +95,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 chainEl.appendChild(arrow);
             }
         });
-        
+
         refreshPending();
         refreshKeys();
+        refreshAttackBlockList(chain);
     }
 
     // Fetch and render the pending transactions pool
@@ -98,12 +107,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch('/api/pending');
         const pending = await res.json();
         const el = document.getElementById('pending-el');
-        
+
         if (pending.length === 0) {
             el.innerHTML = '<p class="hint">Brak transakcji w kolejce</p>';
             return;
         }
-        
+
         el.innerHTML = pending.map(tx => `
             <div class="pending-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
                 <div style="display: flex; justify-content: space-between; width: 100%;">
@@ -121,12 +130,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch('/api/keys');
         const users = await res.json();
         const el = document.getElementById('users-list');
-        
+
         if (Object.keys(users).length === 0) {
-            el.innerHTML = '<p class="hint">Brak użytkowników — dodaj transakcję</p>';
+            el.innerHTML = '<p class="hint">Brak użytkowników — dodaj transakcję aby wygenerować klucze RSA</p>';
             return;
         }
-        
+
         el.innerHTML = Object.keys(users).map(user => `
             <div class="user-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
                 <div style="display: flex; justify-content: space-between; width: 100%;">
@@ -145,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function showBlockDetails(block) {
         document.getElementById('detail-empty').style.display = 'none';
         document.getElementById('detail-panel').style.display = 'grid';
-        
+
         document.getElementById('d-header').innerHTML = `
             <div class="d-field"><div class="d-label">Index</div><div class="d-val">${block.index}</div></div>
             <div class="d-field"><div class="d-label">Nonce (Proof of Work)</div><div class="d-val">${block.nonce}</div></div>
@@ -169,19 +178,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Populate attack tab block selector with mined (non-genesis) blocks
+    // Wypełnienie selektora bloków w zakładce ataku wydobytymi blokami (bez genesis)
+    function refreshAttackBlockList(chain) {
+        const select = document.getElementById('attack-block-select');
+        const previousValue = select.value;
+        select.innerHTML = '';
+
+        const minedBlocks = chain.filter(b => b.index > 0 && b.transactions.length > 0);
+
+        if (minedBlocks.length === 0) {
+            select.innerHTML = '<option value="">— brak wydobytych bloków z transakcjami —</option>';
+            return;
+        }
+
+        minedBlocks.forEach(block => {
+            const tx = block.transactions[0];
+            const label = `Blok #${block.index} — ${tx.sender} → ${tx.recipient} (${tx.amount} BTC)`;
+            select.innerHTML += `<option value="${block.index}">${label}</option>`;
+        });
+
+        // Restore previous selection if still valid
+        // Przywraca poprzedni wybór jeśli nadal obowiązuje
+        if (previousValue && select.querySelector(`option[value="${previousValue}"]`)) {
+            select.value = previousValue;
+        }
+    }
+
     // Handle new transaction submission
     // Obsługa przesyłania nowej transakcji
     document.getElementById('btn-add-tx').onclick = async () => {
         const s = document.getElementById('tx-sender').value;
         const r = document.getElementById('tx-recipient').value;
         const a = document.getElementById('tx-amount').value;
-        
+
         if(!s || !r || !a) {
             document.getElementById('tx-msg').innerText = "Wypełnij wszystkie pola!";
             document.getElementById('tx-msg').className = "msg err";
             return;
         }
-        
+
         let response;
         try {
             response = await fetch('/api/transaction', {
@@ -194,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('tx-msg').className = "msg err";
             return;
         }
-        
+
         let data;
         try {
             // Parse server response safely
@@ -206,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('tx-msg').className = "msg err";
             return;
         }
-        
+
         // Handle server-side validation feedback
         // Obsługa komunikatów zwrotnych z walidacji po stronie serwera
         if (data.status === "ok") {
@@ -219,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('tx-msg').className = "msg err";
             log(`Odrzucono transakcję: ${data.message}`, "err");
         }
-        
+
         refreshPending();
     };
 
@@ -228,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-mine').onclick = async () => {
         document.getElementById('mine-pow').style.display = 'block';
         document.getElementById('mine-msg').innerText = '';
-        
+
         let res, data;
         try {
             res = await fetch('/api/mine', {method: 'POST'});
@@ -239,9 +275,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('mine-msg').innerText = "Błąd serwera podczas kopania.";
             return;
         }
-        
+
         document.getElementById('mine-pow').style.display = 'none';
-        
+
         if(data.status === "ok") {
             document.getElementById('mine-msg').className = "msg ok";
             document.getElementById('mine-msg').innerText = data.message;
@@ -259,14 +295,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch(endpoint);
         const data = await res.json();
         const el = document.getElementById(elId);
-        
+
         if(data.valid) {
             el.innerHTML = `<div class="result ok"><div class="result-title">Sukces</div>Wszystkie testy zaliczone.</div>`;
             log(`Walidacja ${endpoint.split('/').pop()} zakończona pomyślnie.`, "ok");
             document.getElementById('s-status').className = 'status-ok';
             document.getElementById('s-status').innerText = '● Prawidłowy';
         } else {
-            el.innerHTML = `<div class="result err"><div class="result-title">Błąd Walidacji</div>` + 
+            el.innerHTML = `<div class="result err"><div class="result-title">Błąd Walidacji</div>` +
                            data.errors.map(e => `<div class="result-row">${e}</div>`).join('') + `</div>`;
             log(`Wykryto błąd podczas walidacji ${endpoint.split('/').pop()}!`, "err");
             document.getElementById('s-status').className = 'status-err';
@@ -274,11 +310,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Event listeners for validator buttons
-    // Nasłuchiwanie zdarzeń dla przycisków walidatora
+    // Event listeners for validator buttons (security tab)
+    // Nasłuchiwanie zdarzeń dla przycisków walidatora (zakładka bezpieczeństwo)
     document.getElementById('btn-val-hash').onclick = () => runValidator('/api/validate/hash', 'val-hash-result');
     document.getElementById('btn-val-sig').onclick = () => runValidator('/api/validate/signature', 'val-sig-result');
     document.getElementById('btn-val-struct').onclick = () => runValidator('/api/validate/structure', 'val-struct-result');
+
+    // Perform the attack — send tamper request to backend
+    // Wykonuje atak — wysyła żądanie manipulacji do backendu
+    document.getElementById('btn-attack-tamper').onclick = async () => {
+        const blockIndex = document.getElementById('attack-block-select').value;
+        const newAmount = document.getElementById('attack-new-amount').value;
+
+        if (!blockIndex) {
+            document.getElementById('attack-msg').innerText = "Wybierz blok!";
+            document.getElementById('attack-msg').className = "msg err";
+            return;
+        }
+        if (!newAmount || parseFloat(newAmount) <= 0) {
+            document.getElementById('attack-msg').innerText = "Podaj prawidłową kwotę!";
+            document.getElementById('attack-msg').className = "msg err";
+            return;
+        }
+
+        let res, data;
+        try {
+            res = await fetch('/api/attack/tamper', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({block_index: parseInt(blockIndex), tx_index: 0, new_amount: parseFloat(newAmount)})
+            });
+            data = await res.json();
+        } catch(e) {
+            document.getElementById('attack-msg').innerText = "Błąd serwera.";
+            document.getElementById('attack-msg').className = "msg err";
+            return;
+        }
+
+        if (data.status !== "ok") {
+            document.getElementById('attack-msg').innerText = data.message;
+            document.getElementById('attack-msg').className = "msg err";
+            return;
+        }
+
+        // Display the before/after comparison of the tampered block
+        // Wyświetla porównanie stanu bloku przed i po manipulacji
+        const d = data.details;
+        document.getElementById('attack-msg').innerText = data.message;
+        document.getElementById('attack-msg').className = "msg err";
+
+        document.getElementById('attack-result-box').style.display = 'block';
+        document.getElementById('attack-result-content').innerHTML = `
+            <div class="d-field"><div class="d-label">Blok nr</div><div class="d-val">#${d.block_index}</div></div>
+            <div class="d-field"><div class="d-label">Oryginalna kwota</div><div class="d-val">${d.original_amount} BTC</div></div>
+            <div class="d-field"><div class="d-label">Zmieniona kwota</div><div class="d-val" style="color:#d9534f;font-weight:bold;">${d.new_amount} BTC</div></div>
+            <div class="d-field"><div class="d-label">Hash bloku (niezmieniony!)</div><div class="d-val mono" style="font-size:10px;">${d.block_hash_unchanged}</div></div>
+            <p class="hint" style="margin-top:8px;">Hash bloku nie zmienił się — atak jest ukryty. Uruchom walidatory poniżej aby go wykryć.</p>
+        `;
+
+        attackLog(`ATAK: zmieniono kwotę w bloku #${d.block_index}: ${d.original_amount} BTC → ${d.new_amount} BTC`, "err");
+        refreshData();
+    };
 
     // Reset blockchain state and clear in-memory wallets
     // Zresetowanie stanu blockchaina i wyczyszczenie portfeli w pamięci RAM
@@ -286,8 +378,10 @@ document.addEventListener('DOMContentLoaded', () => {
         await fetch('/api/reset', {method: 'POST'});
         log(`Blockchain został zresetowany.`, "info");
         document.querySelectorAll('.result').forEach(el => el.innerHTML = '');
-        document.getElementById('tx-msg').innerText = ''; 
+        document.getElementById('tx-msg').innerText = '';
         document.getElementById('mine-msg').innerText = '';
+        document.getElementById('attack-msg').innerText = '';
+        document.getElementById('attack-result-box').style.display = 'none';
         refreshData();
     };
 
