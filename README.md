@@ -32,12 +32,6 @@ Następnie otwórz przeglądarkę i przejdź pod adres:
 http://localhost:5000
 ```
 
-## Uruchomienie testów
-
-```bash
-python -m pytest tests/test_all.py -v
-```
-
 ## Struktura projektu
 
 ```
@@ -53,13 +47,10 @@ blockchain-simulator/
 ├── validators/              # Walidatory integralności
 │   ├── hash_validator.py
 │   ├── signature_validator.py
-│   └── structure_validator.py
-├── tests/
-│   └── test_all.py          # 100 testów jednostkowych
+│   └── structure_validator.py      
 ├── gui/                     # Interfejs webowy
 │   ├── index.html
 │   ├── main.js
 │   └── Style.css
-├── conftest.py              # Konfiguracja pytest
 └── pytest.ini
 ```
