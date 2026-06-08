@@ -52,5 +52,4 @@ blockchain-simulator/
 │   ├── index.html
 │   ├── main.js
 │   └── Style.css
-└── pytest.ini
 ```
