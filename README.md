@@ -17,7 +17,7 @@ Python 3.11+
 ## Instalacja
 
 ```bash
-pip install flask cryptography pytest
+pip install flask cryptography
 ```
 
 ## Uruchomienie
